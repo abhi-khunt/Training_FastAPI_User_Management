@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register Form</title>
+
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="card shadow">
+                <div class="card-header text-center">
+                    <h4>User Registration</h4>
+                </div>
+
+                <div class="card-body">
+                    <form id="registerForm" class="needs-validation" novalidate>
+
+                        <!-- First Name -->
+                        <div class="mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="first_name"
+                                   required>
+                            <div class="invalid-feedback">
+                                Please enter your first name.
+                            </div>
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="last_name"
+                                   required>
+                            <div class="invalid-feedback">
+                                Please enter your last name.
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   name="email"
+                                   required>
+                            <div class="invalid-feedback">
+                                Please enter a valid email.
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   name="phone_number"
+                                   pattern="[0-9]{10}"
+                                   required>
+                            <div class="invalid-feedback">
+                                Please enter a valid 10-digit phone number.
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   name="password"
+                                   minlength="6"
+                                   required>
+                            <div class="invalid-feedback">
+                                Password must be at least 6 characters.
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   name="confirm_password"
+                                   minlength="6"
+                                   required>
+                            <div class="invalid-feedback">
+                                Please confirm your password.
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                Register
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS + Validation Script -->
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("registerForm");
+    const passwordInput = form.password;
+    const confirmPasswordInput = form.confirm_password;
+
+    form.addEventListener("submit", handleRegisterSubmit);
+
+    async function handleRegisterSubmit(event) {
+
+        event.preventDefault(); // stop default form submit
+
+        // Reset custom validation message
+        confirmPasswordInput.setCustomValidity("");
+
+        // Check password match first
+        if (passwordInput.value !== confirmPasswordInput.value) {
+            confirmPasswordInput.setCustomValidity("Passwords do not match");
+        }
+
+        if (!form.checkValidity()) {
+            form.classList.add("was-validated");
+            return;
+        }
+        
+
+        const formData = {
+            first_name: form.first_name.value,
+            last_name: form.last_name.value,
+            email: form.email.value,
+            phone_number: form.phone_number.value,
+            password: form.password.value,
+            
+        };
+
+        try {
+            const response = await fetch("/api/users/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            console.log(result);
+
+            if (response.ok) {
+                alert("Registration successful!");
+                window.location.href = "/login";
+            } else {
+                alert(result.error || "Something went wrong");
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Server error");
+        }
+    }
+
+});
+</script>
+
+
+
+
+
+
+</body>
+</html>

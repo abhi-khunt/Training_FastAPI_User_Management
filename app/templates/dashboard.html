@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+
+        <a class="navbar-brand" href="#">Dashboard</a>
+
+        <div class="d-flex gap-2">
+
+            <!-- Create Task Button (Triggers Modal) -->
+            <button class="btn btn-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#createTaskModal">
+                Create Task
+            </button>
+
+            <!-- Profile Button -->
+            <a href="/profile" class="btn btn-outline-light">
+                Profile
+            </a>
+
+            <!-- Logout Button -->
+            <button type="button" id="logout" class="btn btn-danger">
+                Logout
+            </button>
+
+        </div>
+
+    </div>
+</nav>
+
+
+<!-- Main Content -->
+<div class="container mt-4">
+    <h3>Welcome to your Dashboard</h3>
+
+    <div id="taskContainer" class="mt-4"></div>
+</div>
+</div>
+
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <form id="createTaskForm" class="needs-validation" novalidate>
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">Task Name</label>
+                        <input type="text"
+                               class="form-control"
+                               name="task_name"
+                               required>
+                        <div class="invalid-feedback">
+                            Please enter a task name.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Task Description</label>
+                        <textarea 
+                               class="form-control"
+                               name="task_description"
+                               rows="4"
+                               required></textarea>
+                        <div class="invalid-feedback">
+                            Please enter a task details
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">
+                        Create
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Validation Script -->
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    
+     // Listing tasks
+    const taskContainer = document.getElementById("taskContainer");
+    try {
+        const response = await fetch("/api/users/tasks", {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            taskContainer.innerHTML = 
+                "<p class='text-danger'>Failed to load tasks</p>";
+            return window.location.replace("/login");;
+        }
+
+        const tasks = await response.json();
+
+        if (tasks.length === 0) {
+            taskContainer.innerHTML = 
+                "<p class='text-muted'>No tasks available.</p>";
+        } else {
+            let html = "";
+
+            tasks.forEach(task => {
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <strong>${task.title}</strong>
+                            <div>
+                                <button 
+                                    class="btn btn-sm btn-warning me-2 edit-btn"
+                                    data-id="${task.id}"
+                                    data-title="${task.title}"
+                                    data-description="${task.description || ""}">
+                                    Edit
+                                </button>
+                                <button 
+                                    class="btn btn-sm btn-danger delete-btn" 
+                                    data-id="${task.id}">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <p class="card-text text-muted">
+                                ${task.description || ""}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            taskContainer.innerHTML = html;
+        }
+
+    } catch (error) {
+        console.error("Error fetching tasks:", error);
+        taskContainer.innerHTML =
+            "<p class='text-danger'>Error loading tasks</p>";
+    }
+    
+    //editing task form
+    document.getElementById("editTaskForm")
+    .addEventListener("submit", async function (e) {
+
+        e.preventDefault();
+
+        const taskId = document.getElementById("editTaskId").value;
+        const title = document.getElementById("editTaskTitle").value;
+        const description = document.getElementById("editTaskDescription").value;
+        console.log(taskId)
+        try {
+            const response = await fetch(`/api/users/tasks/${taskId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    task_title: title,
+                    task_desc:description
+                })
+            });
+
+            if (response.ok) {
+
+                // Hide modal
+                bootstrap.Modal.getInstance(
+                    document.getElementById("editTaskModal")
+                ).hide();
+
+                // Reload tasks
+                 window.location.reload();
+
+            } else {
+                alert("Failed to update task");
+            }
+
+        } catch (error) {
+            console.error("Update error:", error);
+        }
+    });
+    
+    //giving functionality to edit and delete button
+    document.addEventListener("click", async function (e) {
+
+        if (e.target.classList.contains("edit-btn")) {
+
+            const taskId = e.target.dataset.id;
+            const title = e.target.dataset.title;
+            const description = e.target.dataset.description;
+
+            // Fill modal fields
+            document.getElementById("editTaskId").value = taskId;
+            document.getElementById("editTaskTitle").value = title;
+            document.getElementById("editTaskDescription").value = description;
+
+            // Show modal
+            const modal = new bootstrap.Modal(
+                document.getElementById("editTaskModal")
+            );
+            modal.show();
+        }
+
+        if (e.target.classList.contains("delete-btn")) {
+
+        const taskId = e.target.dataset.id;
+
+        const confirmDelete = confirm("Are you sure?");
+        if (!confirmDelete) return;
+
+        try {
+            const response = await fetch(`/api/users/tasks/${taskId}`, {
+                method: "DELETE",
+                credentials: "include"
+            });
+
+            if (response.ok) {
+                window.location.reload();   // reload without refreshing page
+            } else {
+                alert("Failed to delete task");
+            }
+
+        } catch (error) {
+            console.error("Delete error:", error);
+        }
+    }
+    });
+
+   //handling task creation
+    const createTaskForm = document.getElementById("createTaskForm");
+    createTaskForm.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+
+        const formData = {
+            task_title: createTaskForm.task_name.value,
+            task_desc: createTaskForm.task_description.value
+        };
+
+        try {
+            const response = await fetch("/api/users/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                alert("Task created successfully!");
+                location.reload();  // 🔥 refresh entire page
+            }else if(response.status ===  403){
+                alert("Token expired")
+            }
+             else {
+                alert("Error creating task");
+            }
+
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    });
+
+    document.getElementById("logout").addEventListener("click", async ()=>{
+
+        const response = await fetch("/api/users/logout",{
+            method : "DELETE",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include"
+        });
+        const data = await response.json();
+        if (response.ok){
+            window.location.href = "/login"
+        }else{
+            alert("something went wrong")
+        }
+    } );
+
+
+});
+</script>
+
+</body>
+</html>
+
+
+<!-- Edit Task Modal -->
+<div class="modal fade" id="editTaskModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Task</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="editTaskForm">
+          <input type="hidden" id="editTaskId">
+
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" class="form-control" id="editTaskTitle" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="editTaskDescription"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            Save Changes
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
